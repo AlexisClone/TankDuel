@@ -26,7 +26,6 @@ public class GameScreen implements Screen {
     Texture img;
     Texture UIGreen, UIBlue;
     Pad padGreen, padBlue;
-    //Joystick joystickGreen, joystickBlue;
     FireTouch fireTouchGreen, fireTouchBlue;
     Tank greenTank, blueTank;
 
@@ -40,10 +39,7 @@ public class GameScreen implements Screen {
 
         UIGreen = new Texture("img/UIGreen.png");
         UIBlue = new Texture("img/UIBlue.png");
-        /*
-        joystickGreen = new Joystick(60, 720);
-        joystickBlue = new Joystick(1560, 60);
-        */
+
         padGreen = new Pad(60, 720);
         padBlue = new Pad(1560, 60);
 
@@ -74,11 +70,7 @@ public class GameScreen implements Screen {
         blueTank.draw(game.batch);
 
         padGreen.draw(game.batch);
-        padBlue.draw(game.batch);
-        /*
-        joystickGreen.draw(game.batch);
-        joystickBlue.draw(game.batch);
-        */
+
         greenTank.drawHearth(game.batch);
         blueTank.drawHearth(game.batch);
 
@@ -100,18 +92,6 @@ public class GameScreen implements Screen {
         //UPDATES
         greenTank.updateShot(Gdx.graphics.getDeltaTime());
         blueTank.updateShot(Gdx.graphics.getDeltaTime());
-
-        /*
-        for (int i = 0; i < 10; i++) {
-            if (Gdx.input.isTouched(i)) {
-                greenTank.move(joystickGreen.getDirection(Gdx.input.getX(i), Gdx.input.getY(i)), Gdx.graphics.getDeltaTime());
-                blueTank.move(joystickBlue.getDirection(Gdx.input.getX(i), Gdx.input.getY(i)), Gdx.graphics.getDeltaTime());
-
-                greenTank.fire(fireTouchGreen.isTouched(Gdx.input.getX(i), Gdx.input.getY(i)));
-                blueTank.fire(fireTouchBlue.isTouched(Gdx.input.getX(i), Gdx.input.getY(i)));
-            }
-        }
-        */
 
         for (int i = 0; i < 10; i++) {
             if (Gdx.input.isTouched(i)) {
