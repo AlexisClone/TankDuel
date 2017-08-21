@@ -1,11 +1,15 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 
 
@@ -13,206 +17,141 @@ import com.badlogic.gdx.utils.Array;
  * Created by Alexis on 26/07/2017.
  */
 
-public class Tank {
+public class Tank extends Sprite{
 
-    private static final int TANK_SPEED = 200;
-    private static final float ROTATE_SPEED = 0.00375f * TANK_SPEED * 360;
-    private static final double RELOAD_TIME = 0.8;
+    public static final int GREEN = 1;
+    public static final int BLUE = 2;
 
-    private static final int TANK_WIDTH = 84;
-    private static final int TANK_HEIGHT = 84;
-    private static final float ANIMATION_SPEED = 0.09f;
+    public static final int WIDTH = 60;
+    public static final int HEIGHT = 60;
 
-    private float stateTime;
+    private static final float SPEED = 2.5f;
 
-    private Rectangle hitbox;
-    private Animation roll;
+    public World world;
+    public Body body;
+
     private int heal;
-    private int direction;
 
-    private int color;
+    public static final float RELOAD_TIME = 0.5f;
+    public double reload;
 
-    private Sprite hearthFull, hearthEmpty;
+    //Attributes for controllers
+    public boolean move;
+    public boolean hasToShot;
+    //------------------------
 
-    private double reload;
     Array<Shot> shots;
 
-    public Tank(int x, int y, int color) {
+    public Tank(World world, int color){
+        this.world = world;
 
-        TextureRegion[][] rollSpriteSheet = new TextureRegion().split(new Texture("img/spriteSheet.png"), TANK_WIDTH, TANK_HEIGHT);
-
-        if (color == 1) {
-            roll = new Animation(ANIMATION_SPEED, rollSpriteSheet[0]);
-            direction = 270;
-            this.color = 1;
-        } else if (color == 2) {
-            roll = new Animation(ANIMATION_SPEED, rollSpriteSheet[1]);
-            direction = 90;
-            this.color = 2;
+        if (color == GREEN) {
+            setPosition(500, 488);
+            setRegion(new TextureRegion(new Texture("img/spriteSheet.png"), 0, 0, 84, 84));
+        } else if (color == BLUE) {
+            setPosition(1200, 488);
+            setRegion(new TextureRegion(new Texture("img/spriteSheet.png"), 0, 84, 84, 84));
         }
 
-        hearthFull = new Sprite(new Texture("img/HearthFull.png"));
-        hearthEmpty = new Sprite(new Texture("img/HearthEmpty.png"));
-
-        hitbox = new Rectangle();
-        hitbox.x = x+2;
-        hitbox.y = y+2;
-        hitbox.width = 84-4;
-        hitbox.height = 84-4;
         heal = 3;
 
         shots = new Array<Shot>();
         reload = RELOAD_TIME;
+
+        move = false;
+
+        setBounds(getX(), getY(), WIDTH / TankDuel.PPM, HEIGHT / TankDuel.PPM);
+        setOrigin((WIDTH/2) / TankDuel.PPM, (HEIGHT/2) / TankDuel.PPM);
+
+        defineTank();
+
     }
 
-    public void draw(SpriteBatch batch) {
-        batch.draw((TextureRegion) roll.getKeyFrame(stateTime, true), hitbox.x, hitbox.y, TANK_WIDTH / 2, TANK_HEIGHT / 2, TANK_WIDTH, TANK_HEIGHT, 1, 1, direction);
+    private void defineTank(){
+        BodyDef bdef = new BodyDef();
+        bdef.position.set((getX() + WIDTH/2) / TankDuel.PPM, (getY() + HEIGHT/2) / TankDuel.PPM);
+        bdef.type = BodyDef.BodyType.DynamicBody;
+        body = world.createBody(bdef);
+
+        FixtureDef fdef = new FixtureDef();
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox((WIDTH/2) / TankDuel.PPM, (HEIGHT/2) / TankDuel.PPM);
+
+        fdef.filter.categoryBits = TankDuel.TANK_BIT;
+        fdef.filter.maskBits = TankDuel.GROUND_BIT | TankDuel.SHOT_BIT;
+
+        fdef.shape = shape;
+
+        body.createFixture(fdef).setUserData(this);
+
+    }
+
+    public void draw(Batch batch) {
+        super.draw(batch);
         for (Shot shot : shots)
             shot.draw(batch);
     }
 
-    public void drawHearth(SpriteBatch batch){
-        int i, j;
-        for (i=0; i<heal; i++) {
-            if (color == 1) {
-                batch.draw(hearthFull, 168, 515 - 100*i, 86, 86, 86, 86, 1, 1, 270);
+    public void outch(Shot shot){
+        shot.setToDestroy();
+        heal--;
+    }
+
+    public void update(float delta) {
+        for (Shot shot : shots){
+            if (!shot.isDestroyed()) {
+                shot.update(delta);
             }else{
-                batch.draw(hearthFull, 1920 - 338, 1080 - 680 + 100*i, 86, 86, 86, 86, 1, 1, 90);
-            }
-        }
-        for (j=i; j<3; j++){
-            if (color == 1) {
-                batch.draw(hearthEmpty, 168, 515 - 100*j, 86, 86, 86, 86, 1, 1, 270);
-            }else{
-                batch.draw(hearthEmpty, 1920 - 338, 1080 - 680 + 100*j, 86, 86, 86, 86, 1, 1, 90);
-            }
-        }
-    }
-
-    public void move(int dir, double delta) {
-
-        int value = 0;
-
-        switch (dir) {
-            case 0:
-                if (direction < 10 && direction > -10) {
-                    direction = 0;
-                    hitbox.y += TANK_SPEED * delta;
-                } else if (direction >= 180) {
-                    value = 1;
-                } else if (direction < 180) {
-                    value = -1;
-                }
-                break;
-            case 1:
-                if (direction < 190 && direction > 170) {
-                    direction = 180;
-                    hitbox.y -= TANK_SPEED * delta;
-                } else if (direction <= 190) {
-                    value = 1;
-                } else if (direction >= 170) {
-                    value = -1;
-                }
-                break;
-            case 2:
-                if (direction < 100 && direction > 80) {
-                    direction = 90;
-                    hitbox.x -= TANK_SPEED * delta;
-                } else if (direction < 90 || direction > 270) {
-                    value = 1;
-                } else if (direction > 90) {
-                    value = -1;
-                }
-                break;
-            case 3:
-                if (direction < 280 && direction > 260) {
-                    direction = 270;
-                    hitbox.x += TANK_SPEED * delta;
-                } else if (direction <= 90 || direction >= 270) {
-                    value = -1;
-                } else {
-                    value = 1;
-                }
-                break;
-        }
-
-        direction += value * ROTATE_SPEED * delta;
-
-        if (direction < 0)
-            direction = 360 + direction;
-        if (direction > 360)
-            direction = 360 - direction;
-
-        if (hitbox.x < 420) {
-            hitbox.x = 420;
-        }
-        if (hitbox.x + hitbox.width > 1500){
-            hitbox.x = 1416;
-        }
-        if (hitbox.y < 0){
-            hitbox.y = 0;
-        }
-        if (hitbox.y + hitbox.height > 1080){
-            hitbox.y = 996;
-        }
-
-        if (dir != -1) {
-            stateTime += delta;
-        }
-
-    }
-
-    public void fire(boolean bool){
-        if(bool && reload >= RELOAD_TIME) {
-            shots.add(new Shot(hitbox.x, hitbox.y, direction));
-            reload = 0;
-        }
-    }
-
-    public void updateShot(float delta){
-        for (Shot shot : shots) {
-            shot.move(delta);
-            if (shot.numberBounds == -1)
                 shots.removeValue(shot, true);
-        }
+            }
+       }
         reload += delta;
+        move();
+        fire();
+        setPosition(body.getPosition().x - getWidth()/2, body.getPosition().y - getHeight()/2);
+        setRotation((float) Math.toDegrees(body.getAngle()));
     }
 
-    public Array<Shot> getShots(){
-        return shots;
+    public void setDirection(int direction){
+        body.setTransform(body.getPosition().x, body.getPosition().y, (float) Math.toRadians(direction));
     }
 
-    public void removeShot(Shot shot){
-        shots.removeValue(shot, true);
-    }
-
-    public boolean collides(Tank otherTank){
-        for (Shot otherShot : otherTank.getShots()) {
-            if ( hitbox.contains(otherShot.getHitboxX(), otherShot.getHitboxY())
-                    || hitbox.contains(otherShot.getHitboxX()+otherShot.getHitboxWidth(), otherShot.getHitboxY())
-                    || hitbox.contains(otherShot.getHitboxX(), otherShot.getHitboxY()+otherShot.getHitboxHeight())
-                    || hitbox.contains(otherShot.getHitboxX()+otherShot.getHitboxWidth(), otherShot.getHitboxY()+otherShot.getHitboxHeight()) )
-            {
-                heal -= 1;
-                otherTank.removeShot(otherShot);
+    public void move() {
+        if(move) {
+            switch ((int) Math.toDegrees(body.getAngle())) {
+                case 0:
+                    body.setLinearVelocity(0, SPEED);
+                    break;
+                case 90:
+                    body.setLinearVelocity(-SPEED, 0);
+                    break;
+                case 180:
+                    body.setLinearVelocity(0, -SPEED);
+                    break;
+                case 270:
+                    body.setLinearVelocity(SPEED, 0);
+                    break;
             }
+        }else{
+            body.setLinearVelocity(0, 0);
         }
-        for (Shot shot : shots) {
-            if ( hitbox.contains(shot.getHitboxX(), shot.getHitboxY())
-                    || hitbox.contains(shot.getHitboxX()+shot.getHitboxWidth(), shot.getHitboxY())
-                    || hitbox.contains(shot.getHitboxX(), shot.getHitboxY()+shot.getHitboxHeight())
-                    || hitbox.contains(shot.getHitboxX()+shot.getHitboxWidth(), shot.getHitboxY()+shot.getHitboxHeight()) )
-            {
-                if (shot.getNumberBounds() < shot.NUMBER_BOUNDS) {
-                    heal -= 1;
-                    removeShot(shot);
-                }
-            }
+    }
+
+    public boolean fire() {
+        if(hasToShot && reload >= RELOAD_TIME) {
+            shots.add(new Shot(world, getX(), getY(), getRotation()));
+            reload = 0;
+            hasToShot = false;
         }
-        if(heal == 0){
-            return true;
-        }
-        return false;
+        return true;
+    }
+
+    public boolean isDead(){
+        return (heal <= 0);
+    }
+
+    public String getHeal(){
+        return Integer.toString(heal) + " LIVES";
     }
 
 }

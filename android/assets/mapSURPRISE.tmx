@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" tiledversion="1.0.2" orientation="orthogonal" renderorder="right-down" width="30" height="16" tilewidth="64" tileheight="64" nextobjectid="6">
+ <tileset firstgid="1" source="sans-titre.tsx"/>
+ <tileset firstgid="300" source="sans-titre.tsx"/>
+ <layer name="Background" width="30" height="16">
+  <data encoding="base64" compression="zlib">
+   eJyTZGBgkBzFo3gUj+JRPIpHMV0xADeQLuE=
+  </data>
+ </layer>
+ <layer name="Calque1" width="30" height="16">
+  <data encoding="base64" compression="zlib">
+   eJxrZmBgaB4gTG8wau+ovaP2jto7au+ovdjsHQgMAEl3LQk=
+  </data>
+ </layer>
+ <objectgroup name="collision">
+  <object id="4" x="0" y="0" width="1856" height="64"/>
+  <object id="5" x="851.515" y="-481.818"/>
+ </objectgroup>
+</map>

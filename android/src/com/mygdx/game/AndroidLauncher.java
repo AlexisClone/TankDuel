@@ -9,10 +9,12 @@ public class AndroidLauncher extends AndroidApplication {
 	@Override
 	protected void onCreate (Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
-		config.useImmersiveMode = true;
-		config.useAccelerometer = false;
-		config.useCompass = false;
-		initialize(new TankDuel(), config);
+		AndroidApplicationConfiguration cfg = new AndroidApplicationConfiguration();
+
+		cfg.useImmersiveMode = true;
+		cfg.useAccelerometer = false;
+		cfg.useCompass = false;
+
+		initialize(new TankDuel(), cfg);
 	}
 }
